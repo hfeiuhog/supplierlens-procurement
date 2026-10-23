@@ -263,3 +263,9 @@ The component is unmapped. Do two things:
 2. Say in the PR that you verified against an unmapped area, and add the path here.
 
 Never treat "not in the map" as "low risk".
+
+## SupplierLens procurement extension
+
+| Path | Component(s) |
+|---|---|
+| `backend/onyx/server/manage/procurement/`, `backend/onyx/db/procurement.py`, `backend/alembic/versions/sl20261023a_procurement_review.py`, `web/src/app/admin/procurement/` | procurement-review, auth-and-identity, multi-tenancy |

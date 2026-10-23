@@ -813,3 +813,7 @@ rolls it back if the remote deletion fails.
 
 Constraint failures during private-skill owner deletion return the same conflict
 message for psycopg2 and asyncpg sessions, including assignments after the precheck.
+
+## SupplierLens procurement integration
+
+The procurement router uses `require_permission(Permission.FULL_ADMIN_PANEL_ACCESS)` on every endpoint and the existing tenant-aware database session. It adds no anonymous or PAT exemption and no legacy role check. Independent review is an additional business rule, not a replacement for platform authorization. See [procurement-review](procurement-review.md).

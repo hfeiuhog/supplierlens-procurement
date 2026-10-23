@@ -16650,6 +16650,9 @@
         },
         "webSearch": {
           "label": "网页搜索"
+        },
+        "procurement": {
+          "label": "采购证据审查"
         }
       },
       "sections": {
@@ -17325,5 +17328,29 @@
     "jvmMemoryTitle": "JVM 内存",
     "vectorMemoryTitle": "向量内存",
     "viewDetails": "查看详情"
+  },
+  "procurement": {
+    "title": "采购证据审查",
+    "description": "核对供应商证据版本，并由独立审核人批准。",
+    "newCase": "新建供应商审查",
+    "payloadHelp": "使用已获授权的来源引用和业务别名。示例仅含合成数据。",
+    "create": "创建草稿",
+    "reviewHint": "仅作者可以提交，须由另一位管理员审核。",
+    "note": "审核备注或拒绝原因",
+    "submit": "提交审核",
+    "approve": "批准",
+    "reject": "拒绝",
+    "audit": "审计记录",
+    "refresh": "刷新",
+    "loading": "正在加载审查记录…",
+    "empty": "暂无审查记录。",
+    "failed": "请求未成功。",
+    "recordState": "{state} · 版本 {version}",
+    "states": {
+      "draft": "草稿",
+      "submitted": "待审",
+      "approved": "已批准",
+      "rejected": "已拒绝"
+    }
   }
 }

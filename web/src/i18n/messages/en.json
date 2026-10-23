@@ -16650,6 +16650,9 @@
         },
         "webSearch": {
           "label": "Web Search"
+        },
+        "procurement": {
+          "label": "Procurement evidence review"
         }
       },
       "sections": {
@@ -17325,5 +17328,29 @@
     "jvmMemoryTitle": "JVM memory",
     "vectorMemoryTitle": "Vector memory",
     "viewDetails": "View details"
+  },
+  "procurement": {
+    "title": "Procurement evidence review",
+    "description": "Review versioned supplier evidence with independent approval.",
+    "newCase": "New supplier review",
+    "payloadHelp": "Use authorized source references and aliases. The example contains synthetic data.",
+    "create": "Create draft",
+    "reviewHint": "Only the author can submit. A different administrator must approve.",
+    "note": "Review note and rejection reason",
+    "submit": "Submit for review",
+    "approve": "Approve",
+    "reject": "Reject",
+    "audit": "Audit trail",
+    "refresh": "Refresh",
+    "loading": "Loading reviews...",
+    "empty": "No reviews yet.",
+    "failed": "The request failed.",
+    "recordState": "{state} · version {version}",
+    "states": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    }
   }
 }

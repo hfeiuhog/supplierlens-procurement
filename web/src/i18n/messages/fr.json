@@ -16650,6 +16650,9 @@
         },
         "webSearch": {
           "label": "Recherche web"
+        },
+        "procurement": {
+          "label": "Examen des preuves fournisseur"
         }
       },
       "sections": {
@@ -17325,5 +17328,29 @@
     "jvmMemoryTitle": "Mémoire JVM",
     "vectorMemoryTitle": "Mémoire vectorielle",
     "viewDetails": "Voir les détails"
+  },
+  "procurement": {
+    "title": "Examen des preuves fournisseur",
+    "description": "Vérifiez les versions avec une approbation indépendante.",
+    "newCase": "Nouvel examen fournisseur",
+    "payloadHelp": "Utilisez des références autorisées et des alias. Les données sont fictives.",
+    "create": "Créer un brouillon",
+    "reviewHint": "Seul l’auteur peut soumettre. Un autre administrateur doit approuver.",
+    "note": "Note et motif du refus",
+    "submit": "Soumettre",
+    "approve": "Approuver",
+    "reject": "Refuser",
+    "audit": "Journal d’audit",
+    "refresh": "Actualiser",
+    "loading": "Chargement...",
+    "empty": "Aucun examen.",
+    "failed": "La demande a échoué.",
+    "recordState": "{state} · version {version}",
+    "states": {
+      "draft": "Brouillon",
+      "submitted": "Soumis",
+      "approved": "Approuvé",
+      "rejected": "Refusé"
+    }
   }
 }

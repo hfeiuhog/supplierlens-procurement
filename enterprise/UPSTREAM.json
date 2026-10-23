@@ -1,0 +1,8 @@
+{
+  "project": "SupplierLens",
+  "upstream": "https://github.com/onyx-dot-app/onyx",
+  "base_commit": "f1fa7005725263df1bbdc6278b62ed804225a75d",
+  "extension_branch": "enterprise",
+  "scope": "采购知识协同与供应商证据审查",
+  "assisted_implementation": true
+}

@@ -167,3 +167,9 @@ Two traps when auditing this yourself:
 
 Anything not listed above is unmapped. If you touch unmapped code, say so in the
 PR rather than assuming it is low risk, and add the component here.
+
+## SupplierLens extension
+
+| | Component | What it covers |
+|---|---|---|
+| ✅ | [procurement-review](components/procurement-review.md) | Admin review UI, evidence contract, dual control, optimistic transitions and audit events. |

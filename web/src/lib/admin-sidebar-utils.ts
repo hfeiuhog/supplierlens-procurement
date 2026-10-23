@@ -18,6 +18,7 @@ export type { FeatureFlags } from "@/lib/admin-routes";
  * `sidebar.adminNav.items.<id>.label` message, resolved in `AdminSidebar`.
  */
 export type AdminNavItemId =
+  | "procurement"
   | "languageModels"
   | "webSearch"
   | "imageGeneration"
@@ -77,6 +78,7 @@ export const NAV_ITEM_IDS: Record<
   keyof typeof ADMIN_ROUTES,
   AdminNavItemId | null
 > = {
+  PROCUREMENT: "procurement",
   LLM_MODELS: "languageModels",
   DECISION_MODELS: "decisionModels",
   WEB_SEARCH: "webSearch",

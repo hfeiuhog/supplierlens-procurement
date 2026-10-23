@@ -33,6 +33,7 @@ from shared_configs.configs import (
 )
 from shared_configs.contextvars import CURRENT_TENANT_ID_CONTEXTVAR
 from onyx.db.models import Base
+from onyx.db.procurement import procurement_metadata
 from celery.backends.database.session import (
     ResultModelBase,  # ty: ignore[unresolved-import]
 )
@@ -56,7 +57,7 @@ if config.config_file_name is not None and config.attributes.get(
     # See: https://pytest-alembic.readthedocs.io/en/latest/setup.html#caplog-issues
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-target_metadata = [Base.metadata, ResultModelBase.metadata]
+target_metadata = [Base.metadata, ResultModelBase.metadata, procurement_metadata]
 
 logger = logging.getLogger(__name__)
 

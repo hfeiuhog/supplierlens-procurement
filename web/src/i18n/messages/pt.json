@@ -16650,6 +16650,9 @@
         },
         "webSearch": {
           "label": "Pesquisa na web"
+        },
+        "procurement": {
+          "label": "Revisão de evidências de compras"
         }
       },
       "sections": {
@@ -17325,5 +17328,29 @@
     "jvmMemoryTitle": "Memória da JVM",
     "vectorMemoryTitle": "Memória vetorial",
     "viewDetails": "Ver detalhes"
+  },
+  "procurement": {
+    "title": "Revisão de evidências de compras",
+    "description": "Revise versões com aprovação independente.",
+    "newCase": "Nova revisão de fornecedor",
+    "payloadHelp": "Use fontes autorizadas e identificadores. O exemplo usa dados sintéticos.",
+    "create": "Criar rascunho",
+    "reviewHint": "Somente o autor pode enviar. Outro administrador deve aprovar.",
+    "note": "Nota e motivo da rejeição",
+    "submit": "Enviar para revisão",
+    "approve": "Aprovar",
+    "reject": "Rejeitar",
+    "audit": "Registro de auditoria",
+    "refresh": "Atualizar",
+    "loading": "Carregando revisões...",
+    "empty": "Ainda não há revisões.",
+    "failed": "A solicitação falhou.",
+    "recordState": "{state} · versão {version}",
+    "states": {
+      "draft": "Rascunho",
+      "submitted": "Enviado",
+      "approved": "Aprovado",
+      "rejected": "Rejeitado"
+    }
   }
 }

@@ -1,0 +1,37 @@
+name: Enterprise extension CI
+on:
+  workflow_dispatch:
+  push:
+    branches: [enterprise]
+    paths: ['enterprise/**', 'backend/onyx/db/procurement.py', 'backend/onyx/server/manage/procurement/**', 'backend/alembic/**', 'web/**', '.github/workflows/enterprise-ci.yml']
+permissions:
+  contents: read
+jobs:
+  procurement:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_USER: ci, POSTGRES_PASSWORD: synthetic-ci-only, POSTGRES_DB: enterprise_ci}
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      PYTHONPATH: backend
+      TEST_DATABASE_URL: postgresql+psycopg://ci:synthetic-ci-only@localhost:5432/enterprise_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {python-version: '3.13'}
+      - run: uv run --no-project --with pytest --with sqlalchemy --with 'psycopg[binary]' --with 'pydantic>=2' pytest -o addopts='' enterprise/tests -q
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: {bun-version: '1.3.13'}
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run types:check
+        working-directory: web
+      - run: bunx oxlint src/app/admin/procurement/page.tsx src/lib/admin-routes.ts src/lib/admin-sidebar-utils.ts src/lib/adminNavLabels.tsx
+        working-directory: web

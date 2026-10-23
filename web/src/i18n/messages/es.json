@@ -16650,6 +16650,9 @@
         },
         "webSearch": {
           "label": "Búsqueda web"
+        },
+        "procurement": {
+          "label": "Revisión de pruebas de compras"
         }
       },
       "sections": {
@@ -17325,5 +17328,29 @@
     "jvmMemoryTitle": "Memoria de JVM",
     "vectorMemoryTitle": "Memoria de vectores",
     "viewDetails": "Ver detalles"
+  },
+  "procurement": {
+    "title": "Revisión de pruebas de compras",
+    "description": "Revise pruebas versionadas con aprobación independiente.",
+    "newCase": "Nueva revisión de proveedor",
+    "payloadHelp": "Use referencias autorizadas y alias. El ejemplo usa datos sintéticos.",
+    "create": "Crear borrador",
+    "reviewHint": "Solo el autor puede enviar. Otro administrador debe aprobar.",
+    "note": "Nota y motivo del rechazo",
+    "submit": "Enviar a revisión",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "audit": "Registro de auditoría",
+    "refresh": "Actualizar",
+    "loading": "Cargando revisiones...",
+    "empty": "Aún no hay revisiones.",
+    "failed": "La solicitud falló.",
+    "recordState": "{state} · versión {version}",
+    "states": {
+      "draft": "Borrador",
+      "submitted": "Enviado",
+      "approved": "Aprobado",
+      "rejected": "Rechazado"
+    }
   }
 }

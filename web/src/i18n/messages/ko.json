@@ -16650,6 +16650,9 @@
         },
         "webSearch": {
           "label": "웹 검색"
+        },
+        "procurement": {
+          "label": "구매 증거 검토"
         }
       },
       "sections": {
@@ -17325,5 +17328,29 @@
     "jvmMemoryTitle": "JVM 메모리",
     "vectorMemoryTitle": "벡터 메모리",
     "viewDetails": "세부 정보 보기"
+  },
+  "procurement": {
+    "title": "구매 증거 검토",
+    "description": "공급업체 증거 버전을 독립 검토자가 승인합니다.",
+    "newCase": "공급업체 검토 만들기",
+    "payloadHelp": "승인된 출처와 별칭을 사용하세요. 예시는 합성 데이터입니다.",
+    "create": "초안 만들기",
+    "reviewHint": "작성자만 제출할 수 있습니다. 다른 관리자가 승인해야 합니다.",
+    "note": "검토 메모 및 거부 사유",
+    "submit": "검토 제출",
+    "approve": "승인",
+    "reject": "거부",
+    "audit": "감사 기록",
+    "refresh": "새로 고침",
+    "loading": "검토를 불러오는 중…",
+    "empty": "검토가 없습니다.",
+    "failed": "요청에 실패했습니다.",
+    "recordState": "{state} · 버전 {version}",
+    "states": {
+      "draft": "초안",
+      "submitted": "제출됨",
+      "approved": "승인됨",
+      "rejected": "거부됨"
+    }
   }
 }

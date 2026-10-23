@@ -16650,6 +16650,9 @@
         },
         "webSearch": {
           "label": "Web 検索"
+        },
+        "procurement": {
+          "label": "調達証拠の審査"
         }
       },
       "sections": {
@@ -17325,5 +17328,29 @@
     "jvmMemoryTitle": "JVMメモリ",
     "vectorMemoryTitle": "ベクトルメモリ",
     "viewDetails": "詳細を表示"
+  },
+  "procurement": {
+    "title": "調達証拠の審査",
+    "description": "供給者の証拠バージョンを独立した担当者が承認します。",
+    "newCase": "供給者審査を作成",
+    "payloadHelp": "許可された出典と別名を使用してください。例は合成データです。",
+    "create": "下書きを作成",
+    "reviewHint": "作成者のみ提出できます。別の管理者が承認してください。",
+    "note": "審査メモと却下理由",
+    "submit": "審査に提出",
+    "approve": "承認",
+    "reject": "却下",
+    "audit": "監査履歴",
+    "refresh": "更新",
+    "loading": "審査を読み込み中…",
+    "empty": "審査はまだありません。",
+    "failed": "リクエストに失敗しました。",
+    "recordState": "{state} · バージョン {version}",
+    "states": {
+      "draft": "下書き",
+      "submitted": "提出済み",
+      "approved": "承認済み",
+      "rejected": "却下済み"
+    }
   }
 }

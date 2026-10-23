@@ -129,6 +129,7 @@ from onyx.server.manage.discord_bot.api import router as discord_bot_router
 from onyx.server.manage.embedding.api import admin_router as embedding_admin_router
 from onyx.server.manage.embedding.api import basic_router as embedding_router
 from onyx.server.manage.get_state import router as state_router
+from onyx.server.manage.procurement.api import router as procurement_router
 from onyx.server.manage.image_generation.api import (
     admin_router as image_generation_admin_router,
 )
@@ -573,6 +574,7 @@ def get_application(lifespan_override: Lifespan | None = None) -> FastAPI:
     include_router_with_global_prefix_prepended(application, oauth_test_admin_router)
     include_router_with_global_prefix_prepended(application, admin_query_router)
     include_router_with_global_prefix_prepended(application, admin_router)
+    include_router_with_global_prefix_prepended(application, procurement_router)
     include_router_with_global_prefix_prepended(application, opensearch_health_router)
     include_router_with_global_prefix_prepended(application, connector_router)
     include_router_with_global_prefix_prepended(application, credential_router)

@@ -16650,6 +16650,9 @@
         },
         "webSearch": {
           "label": "Websuche"
+        },
+        "procurement": {
+          "label": "Beschaffungsnachweise prüfen"
         }
       },
       "sections": {
@@ -17325,5 +17328,29 @@
     "jvmMemoryTitle": "JVM-Arbeitsspeicher",
     "vectorMemoryTitle": "Vektorspeicher",
     "viewDetails": "Details anzeigen"
+  },
+  "procurement": {
+    "title": "Beschaffungsnachweise prüfen",
+    "description": "Prüfen Sie Versionen mit unabhängiger Freigabe.",
+    "newCase": "Neue Lieferantenprüfung",
+    "payloadHelp": "Verwenden Sie genehmigte Quellen und Aliasse. Das Beispiel enthält Testdaten.",
+    "create": "Entwurf erstellen",
+    "reviewHint": "Nur der Autor darf einreichen. Ein anderer Administrator muss freigeben.",
+    "note": "Prüfnotiz und Ablehnungsgrund",
+    "submit": "Zur Prüfung senden",
+    "approve": "Freigeben",
+    "reject": "Ablehnen",
+    "audit": "Prüfprotokoll",
+    "refresh": "Aktualisieren",
+    "loading": "Prüfungen werden geladen...",
+    "empty": "Noch keine Prüfungen.",
+    "failed": "Die Anfrage ist fehlgeschlagen.",
+    "recordState": "{state} · Version {version}",
+    "states": {
+      "draft": "Entwurf",
+      "submitted": "Eingereicht",
+      "approved": "Freigegeben",
+      "rejected": "Abgelehnt"
+    }
   }
 }

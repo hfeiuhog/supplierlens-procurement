@@ -95,6 +95,16 @@ export interface AdminRouteEntry {
 }
 
 export const ADMIN_ROUTES = {
+  PROCUREMENT: {
+    path: "/admin/procurement",
+    icon: SvgClipboard,
+    title: "Procurement",
+    sidebarLabel: "Procurement",
+    requiredPermission: Permission.FULL_ADMIN_PANEL_ACCESS,
+    section: "",
+    requiredTier: null,
+    visibleWhen: null,
+  },
   // ── System Configuration (unlabeled section) ──────────────────────
   LLM_MODELS: {
     path: "/admin/language-models",
