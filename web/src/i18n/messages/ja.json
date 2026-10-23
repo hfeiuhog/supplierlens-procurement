@@ -17351,6 +17351,11 @@
       "submitted": "提出済み",
       "approved": "承認済み",
       "rejected": "却下済み"
-    }
+    },
+    "evidencePackage": "Review evidence",
+    "mandatory": "Mandatory",
+    "optional": "Optional",
+    "validUntil": "Valid until: {date}",
+    "missingEvidence": "No supporting evidence"
   }
 }

@@ -17351,6 +17351,11 @@
       "submitted": "待审",
       "approved": "已批准",
       "rejected": "已拒绝"
-    }
+    },
+    "evidencePackage": "查看审查证据",
+    "mandatory": "必选要求",
+    "optional": "可选要求",
+    "validUntil": "有效期至：{date}",
+    "missingEvidence": "缺少支持证据"
   }
 }

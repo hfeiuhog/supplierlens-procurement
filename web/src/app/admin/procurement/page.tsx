@@ -3,17 +3,22 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { useTranslations } from "next-intl";
-import { z } from "zod";
+import { array, boolean, mixed, number, object, string, type InferType } from "yup";
 import { Button, InputTextArea, Text } from "@opal/components";
 import { Section, SettingsLayouts } from "@opal/layouts";
 
-const reviewSchema = z.object({
-  id: z.string(), owner_id: z.string(), payload_hash: z.string(),
-  state: z.enum(["draft", "submitted", "approved", "rejected"]), version: z.number(),
-  payload: z.object({ vendor_ref: z.string(), tender_ref: z.string() }).passthrough(),
-});
-type Review = z.infer<typeof reviewSchema>;
-const auditSchema = z.array(z.object({ actor_id: z.string(), action: z.string(), version: z.number(), payload_hash: z.string(), note: z.string() }));
+const reviewSchema = object({
+  id: string().required(), owner_id: string().required(), payload_hash: string().required(),
+  state: mixed<"draft" | "submitted" | "approved" | "rejected">().oneOf(["draft", "submitted", "approved", "rejected"]).required(), version: number().required(),
+  payload: object({
+    vendor_ref: string().required(), tender_ref: string().required(),
+    requirements: array().of(object({ key: string().required(), label: string().required(), mandatory: boolean().required() }).required()).required(),
+    evidence: array().of(object({ requirement_key: string().required(), document_ref: string().required(), version: string().required(), quote: string().required(), valid_until: string().nullable().optional() }).required()).required(),
+  }).required(),
+}).required();
+type Review = InferType<typeof reviewSchema>;
+const reviewsSchema = array().of(reviewSchema).required();
+const auditSchema = array().of(object({ actor_id: string().required(), action: string().required(), version: number().required(), payload_hash: string().required(), note: string().defined() }).required()).required();
 const sample = {
   vendor_ref: "SYN-VENDOR-001", tender_ref: "SYN-TENDER-001",
   requirements: [{ key: "quality", label: "ISO quality certificate", mandatory: true }],
@@ -28,11 +33,11 @@ async function request(url: string, init: RequestInit = {}): Promise<Response> {
 }
 
 async function fetchReviews(url: string): Promise<Review[]> {
-  return z.array(reviewSchema).parse(await (await request(url)).json());
+  return reviewsSchema.validateSync(await (await request(url)).json(), { strict: true });
 }
 
-async function fetchAudit(url: string): Promise<z.infer<typeof auditSchema>> {
-  return auditSchema.parse(await (await request(url)).json());
+async function fetchAudit(url: string): Promise<InferType<typeof auditSchema>> {
+  return auditSchema.validateSync(await (await request(url)).json(), { strict: true });
 }
 
 export default function ProcurementPage() {
@@ -41,6 +46,8 @@ export default function ProcurementPage() {
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [requestKey, setRequestKey] = useState(() => crypto.randomUUID());
+  const [details, setDetails] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const { data, error: loadError, isLoading, mutate } = useSWR("/api/admin/procurement", fetchReviews);
   const { data: audit, mutate: refreshAudit } = useSWR(selected ? `/api/admin/procurement/${selected}/audit` : null, fetchAudit);
@@ -49,7 +56,7 @@ export default function ProcurementPage() {
     setBusy(true); setError("");
     try {
       const payload: unknown = JSON.parse(raw);
-      await request("/api/admin/procurement", { method: "POST", headers: { "Idempotency-Key": crypto.randomUUID() }, body: JSON.stringify(payload) });
+      await request("/api/admin/procurement", { method: "POST", headers: { "Idempotency-Key": requestKey }, body: JSON.stringify(payload) });
       await mutate();
     } catch (failure) { setError(failure instanceof Error ? failure.message : t("failed")); }
     finally { setBusy(false); }
@@ -72,7 +79,7 @@ export default function ProcurementPage() {
       <Section height="auto" alignItems="stretch" gap={3}>
         <Text font="heading-h3">{t("newCase")}</Text>
         <Text color="text-03">{t("payloadHelp")}</Text>
-        <InputTextArea aria-label={t("newCase")} mono rows={12} maxLength={200000} value={raw} onChange={(event) => setRaw(event.target.value)} />
+        <InputTextArea aria-label={t("newCase")} mono rows={12} maxLength={200000} value={raw} onChange={(event) => { setRaw(event.target.value); setRequestKey(crypto.randomUUID()); }} />
         <Button disabled={busy} onClick={() => void create()}>{t("create")}</Button>
       </Section>
       <Section height="auto" alignItems="stretch" gap={3}>
@@ -85,6 +92,7 @@ export default function ProcurementPage() {
           <Text font="main-content-emphasis">{`${review.payload.tender_ref} / ${review.payload.vendor_ref}`}</Text>
           <Text color="text-03">{t("recordState", { state: t(`states.${review.state}`), version: review.version })}</Text>
           <Section flexDirection="row" height="auto" justifyContent="start" wrap gap={2}>
+            <Button prominence="secondary" onClick={() => setDetails(details === review.id ? null : review.id)}>{t("evidencePackage")}</Button>
             {review.state === "draft" && <Button disabled={busy} onClick={() => void decide(review, "submit")}>{t("submit")}</Button>}
             {review.state === "submitted" && <>
               <Button disabled={busy} onClick={() => void decide(review, "approve")}>{t("approve")}</Button>
@@ -92,6 +100,18 @@ export default function ProcurementPage() {
             </>}
             <Button prominence="secondary" onClick={() => setSelected(review.id)}>{t("audit")}</Button>
           </Section>
+          {details === review.id && <Section height="auto" alignItems="stretch" gap={3}>
+            <Text font="secondary-mono" wordWrap="wrap-anywhere">{review.payload_hash}</Text>
+            {review.payload.requirements.map((requirement) => <Section key={requirement.key} height="auto" alignItems="stretch" gap={2}>
+              <Text font="main-content-emphasis">{`${requirement.label} · ${t(requirement.mandatory ? "mandatory" : "optional")}`}</Text>
+              {review.payload.evidence.filter((evidence) => evidence.requirement_key === requirement.key).map((evidence, index) => <Section key={`${evidence.document_ref}-${index}`} height="auto" alignItems="stretch" gap={1}>
+                <Text color="text-03" wordWrap="wrap-anywhere">{`${evidence.document_ref} / ${evidence.version}`}</Text>
+                <Text wordWrap="wrap-anywhere">{evidence.quote}</Text>
+                {evidence.valid_until && <Text color="text-03">{t("validUntil", { date: evidence.valid_until })}</Text>}
+              </Section>)}
+              {!review.payload.evidence.some((evidence) => evidence.requirement_key === requirement.key) && <Text color="status-error-05">{t("missingEvidence")}</Text>}
+            </Section>)}
+          </Section>}
         </Section>)}
         {selected && <Section height="auto" alignItems="stretch" gap={2}>
           <Text font="heading-h3">{t("audit")}</Text>

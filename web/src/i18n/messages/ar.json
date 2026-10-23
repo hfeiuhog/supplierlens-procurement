@@ -17351,6 +17351,11 @@
       "submitted": "مقدم",
       "approved": "مقبول",
       "rejected": "مرفوض"
-    }
+    },
+    "evidencePackage": "Review evidence",
+    "mandatory": "Mandatory",
+    "optional": "Optional",
+    "validUntil": "Valid until: {date}",
+    "missingEvidence": "No supporting evidence"
   }
 }

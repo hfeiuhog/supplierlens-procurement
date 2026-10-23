@@ -17351,6 +17351,11 @@
       "submitted": "Enviado",
       "approved": "Aprovado",
       "rejected": "Rejeitado"
-    }
+    },
+    "evidencePackage": "Review evidence",
+    "mandatory": "Mandatory",
+    "optional": "Optional",
+    "validUntil": "Valid until: {date}",
+    "missingEvidence": "No supporting evidence"
   }
 }
