@@ -36,5 +36,5 @@ flowchart LR
 
 ## 归属与许可
 
-个人开源二次开发，新增实现使用 AI 辅助。上游平台能力归 Onyx 及其贡献者；本次贡献以固定基线之后的 diff 为准。保留原有 LICENSE、NOTICE 与作者署名。
+新增实现使用 AI 辅助。上游平台能力归 Onyx 及其贡献者；本次贡献以固定基线之后的 diff 为准。保留原有 LICENSE、NOTICE 与作者署名。
 Onyx 仓库有 CE/EE 授权边界，本次修改位于社区版路径；未修改或解除 EE 的商业授权要求。完整许可见 [LICENSE](LICENSE)。
