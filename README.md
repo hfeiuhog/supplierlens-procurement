@@ -2,7 +2,7 @@
 
 基于 [Onyx](https://github.com/onyx-dot-app/onyx) 的采购场景二次开发：让供应商资质、招标要求和人工审查记录形成可追溯的业务流程。
 
-[![Enterprise CI](https://github.com/hfeiuhog/supplierlens-onyx/actions/workflows/enterprise-ci.yml/badge.svg?branch=enterprise)](https://github.com/hfeiuhog/supplierlens-onyx/actions/workflows/enterprise-ci.yml)
+[![Enterprise CI](https://github.com/hfeiuhog/supplierlens-procurement/actions/workflows/enterprise-ci.yml/badge.svg?branch=enterprise)](https://github.com/hfeiuhog/supplierlens-procurement/actions/workflows/enterprise-ci.yml)
 
 ## 业务问题与本次实现
 
