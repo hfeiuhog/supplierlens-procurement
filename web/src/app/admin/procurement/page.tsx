@@ -77,7 +77,7 @@ export default function ProcurementPage() {
     ]} />
     <SettingsLayouts.Body>
       <Section height="auto" alignItems="stretch" gap={3}>
-        <Text font="heading-h3">{t("newCase")}</Text>
+        <Text font="heading-section">{t("newCase")}</Text>
         <Text color="text-03">{t("payloadHelp")}</Text>
         <InputTextArea aria-label={t("newCase")} mono rows={12} maxLength={200000} value={raw} onChange={(event) => { setRaw(event.target.value); setRequestKey(crypto.randomUUID()); }} />
         <Button disabled={busy} onClick={() => void create()}>{t("create")}</Button>
@@ -114,7 +114,7 @@ export default function ProcurementPage() {
           </Section>}
         </Section>)}
         {selected && <Section height="auto" alignItems="stretch" gap={2}>
-          <Text font="heading-h3">{t("audit")}</Text>
+          <Text font="heading-section">{t("audit")}</Text>
           {audit?.map((event) => <Text key={event.version} font="secondary-mono" wordWrap="wrap-anywhere">{JSON.stringify(event)}</Text>)}
         </Section>}
       </Section>
