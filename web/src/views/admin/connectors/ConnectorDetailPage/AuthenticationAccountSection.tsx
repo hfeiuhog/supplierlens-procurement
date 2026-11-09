@@ -48,6 +48,7 @@ export default function AuthenticationAccountSection({
   const tAccount = useTranslations("admin.connectorsList.add.account");
   const tAdd = useTranslations("admin.connectorsList.add");
   const source = ccPair.connector.source;
+  const connectorId: number = ccPair.connector.id;
   const sourceName = getSourceDisplayName(source) ?? source;
   const tCredentials = useTranslations("admin.credentials");
   const { credentials, remove, saveSharing, refresh } =
@@ -131,7 +132,7 @@ export default function AuthenticationAccountSection({
           </Modal.Content>
         </Modal>
       )}
-      <Content title={t("title")} sizePreset="main-content" variant="section" />
+      <Content font="main-content-emphasis" title={t("title")} />
       {credential !== null && isEditableSource(source) ? (
         <AuthenticationAccountCard
           credential={credential}
@@ -149,8 +150,12 @@ export default function AuthenticationAccountSection({
           }}
           detailsOpen={detailsOpen}
           onDetailsOpenChange={setDetailsOpen}
-          checkReport={checkReports.reportFor(credential.id)}
-          onRerunChecks={() => checkReports.rerun(credential.id)}
+          // The pair's checks: without the connector, every check that
+          // needs its settings is skipped.
+          checkReport={
+            checkReports.reportFor(credential.id, connectorId) ??
+            checkReports.reportFor(credential.id)
+          }
           groupsLocked={!businessTier}
           onSaveAccount={(update) => saveSharing(credential.id, update)}
           onUpdateCredentials={
@@ -160,6 +165,7 @@ export default function AuthenticationAccountSection({
       ) : (
         <Card border="solid" rounding={4} padding={2}>
           <ContentAction
+            font="main-ui-action"
             icon={getSourceMetadata(source).icon}
             title={
               ccPair.credential.name ||
@@ -170,8 +176,6 @@ export default function AuthenticationAccountSection({
             description={tAccount("addedOn.label", {
               date: formatDateLog(ccPair.credential.time_created),
             })}
-            sizePreset="main-ui"
-            variant="section"
             padding={0}
             rightChildren={editAction ?? undefined}
           />

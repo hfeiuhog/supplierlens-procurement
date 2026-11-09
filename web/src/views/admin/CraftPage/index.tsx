@@ -10,6 +10,7 @@ import {
   InputTypeIn,
   InputSwitch,
   Table,
+  Text,
   type TableColumn,
 } from "@opal/components";
 import {
@@ -18,11 +19,10 @@ import {
   InputHorizontal,
   SettingsLayouts,
   toast,
+  Section,
 } from "@opal/layouts";
 
 import SvgNoResult from "@opal/illustrations/no-result";
-import { Section } from "@/layouts/general-layouts";
-import Text from "@/refresh-components/texts/Text";
 import { ConfirmationModalLayout } from "@opal/layouts";
 import UserAvatar from "@/refresh-components/avatars/UserAvatar";
 import { SWR_KEYS } from "@/lib/swr-keys";
@@ -95,8 +95,7 @@ export default function CraftPage() {
         weight: 44,
         cell: (email, row) => (
           <Content
-            sizePreset="main-ui"
-            variant="section"
+            font="main-ui-action"
             title={row.personal_name ?? email}
             description={row.personal_name ? email : undefined}
           />
@@ -163,26 +162,7 @@ export default function CraftPage() {
 
   // useSettings returns a default object while loading (and on error), which
   // lacks onyx_craft_available — don't misreport Craft as unavailable.
-  if (settings.isLoading || settings.error) {
-    return (
-      <SettingsLayouts.Root>
-        {header}
-        <SettingsLayouts.Body>
-          {settings.error ? (
-            <Text as="p" secondaryBody text03>
-              {t("settingsLoadError.description")}
-            </Text>
-          ) : (
-            <div className="flex justify-center py-12">
-              <IconLoader className="h-6 w-6" />
-            </div>
-          )}
-        </SettingsLayouts.Body>
-      </SettingsLayouts.Root>
-    );
-  }
-
-  if (!craftAvailable) {
+  if (!settings.isLoading && !settings.error && !craftAvailable) {
     return (
       <SettingsLayouts.Root>
         {header}
@@ -198,7 +178,10 @@ export default function CraftPage() {
   }
 
   return (
-    <SettingsLayouts.Root>
+    <SettingsLayouts.Root
+      loading={settings.isLoading}
+      error={settings.error ? t("settingsLoadError.description") : false}
+    >
       {header}
       <SettingsLayouts.Body>
         <Card border="solid" rounding={4}>
@@ -219,7 +202,7 @@ export default function CraftPage() {
                 onCheckedChange={(checked) => setPendingDefault(checked)}
               />
             </InputHorizontal>
-            <Text as="p" secondaryBody text03>
+            <Text as="p" font="secondary-body" color="text-03">
               {isLoading
                 ? " "
                 : t("accessSummary.description", {
@@ -232,8 +215,7 @@ export default function CraftPage() {
 
         <Section alignItems="stretch" gap={3}>
           <Content
-            sizePreset="main-content"
-            variant="section"
+            font="main-content-emphasis"
             title={t("perUserAccess.title")}
             description={t("perUserAccess.description")}
           />
@@ -244,7 +226,7 @@ export default function CraftPage() {
             </div>
           )}
           {error ? (
-            <Text as="p" secondaryBody text03>
+            <Text as="p" font="secondary-body" color="text-03">
               {t("usersLoadError.description")}
             </Text>
           ) : null}
@@ -255,7 +237,7 @@ export default function CraftPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder={t("search.placeholder")}
-                searchIcon
+                icon="search"
               />
               <Table
                 items={realUsers}
@@ -299,7 +281,7 @@ export default function CraftPage() {
             </Button>
           }
         >
-          <Text as="p" text03>
+          <Text as="p" color="text-03">
             {pendingDefault
               ? explicitlyDisabled > 0
                 ? t("confirmModal.enableBody.withExclusions.description", {

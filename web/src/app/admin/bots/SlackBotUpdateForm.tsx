@@ -1,9 +1,9 @@
 "use client";
 
+import { useNavigation } from "@opal/navigation";
 import { toast } from "@opal/layouts";
 import { SlackBot } from "@/lib/types";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { updateSlackBotField } from "@/lib/updateSlackBotField";
 import { SlackTokensForm } from "./SlackTokensForm";
@@ -46,7 +46,7 @@ export const ExistingSlackBotForm = ({
   const t = useTranslations("admin.slackBots");
   const [isExpanded, setIsExpanded] = useState(false);
   const [formValues, setFormValues] = useState(existingSlackBot);
-  const router = useRouter();
+  const navigation = useNavigation();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -63,7 +63,6 @@ export const ExistingSlackBotForm = ({
       if (!response.ok) {
         throw new Error(await response.text());
       }
-      toast.success(t("updateForm.fieldUpdated.toast", { field }));
     } catch (error) {
       toast.error(t("updateForm.fieldUpdateFailed.toast", { field }));
     }
@@ -131,7 +130,6 @@ export const ExistingSlackBotForm = ({
                   initialValues={formValues}
                   existingSlackBotId={existingSlackBot.id}
                   refreshSlackBot={refreshSlackBot}
-                  router={router}
                   onValuesChange={(values) => setFormValues(values)}
                 />
               </div>
@@ -160,7 +158,7 @@ export const ExistingSlackBotForm = ({
                   throw new Error(await response.text());
                 }
                 toast.success(t("deleteModal.success.toast"));
-                router.push("/admin/bots");
+                navigation.go("/admin/bots");
               } catch (error) {
                 toast.error(t("deleteModal.error.toast"));
               }

@@ -1400,6 +1400,11 @@ BLOB_STORAGE_SIZE_THRESHOLD = int(
     os.environ.get("BLOB_STORAGE_SIZE_THRESHOLD", 20 * 1024 * 1024)
 )
 
+# Concurrent ACL reads per listing page during Azure Data Lake permission sync.
+AZURE_DATALAKE_ACL_READ_CONCURRENCY = int(
+    os.environ.get("AZURE_DATALAKE_ACL_READ_CONCURRENCY") or 16
+)
+
 BOX_CONNECTOR_SIZE_THRESHOLD = int(
     os.environ.get("BOX_CONNECTOR_SIZE_THRESHOLD", 20 * 1024 * 1024)
 )
@@ -1753,17 +1758,14 @@ MCP_TOOL_CALL_TIMEOUT_SECONDS = int(
 # Miscellaneous
 #####
 JOB_TIMEOUT = int(os.environ.get("JOB_TIMEOUT_SECONDS") or 60 * 60 * 6)  # default 6h
-# A full permission or group sync of a large source can take longer than other jobs
+# Group sync only: a full group sync of a large source can take longer than
+# other jobs. A doc permission sync has no time limit.
 PERMISSION_SYNC_TIMEOUT = int(
     os.environ.get("PERMISSION_SYNC_TIMEOUT_SECONDS") or JOB_TIMEOUT
 )
 # Logs Onyx only model interactions like prompts, responses, messages etc.
 LOG_ONYX_MODEL_INTERACTIONS = (
     os.environ.get("LOG_ONYX_MODEL_INTERACTIONS", "").lower() == "true"
-)
-
-PROMPT_CACHE_CHAT_HISTORY = (
-    os.environ.get("PROMPT_CACHE_CHAT_HISTORY", "").lower() == "true"
 )
 
 # Opt-in cap on outgoing image-count for Azure providers (any model_provider
@@ -1883,7 +1885,7 @@ AZURE_IMAGE_API_BASE = os.environ.get("AZURE_IMAGE_API_BASE")
 AZURE_IMAGE_DEPLOYMENT_NAME = os.environ.get("AZURE_IMAGE_DEPLOYMENT_NAME")
 
 # configurable image model
-IMAGE_MODEL_NAME = os.environ.get("IMAGE_MODEL_NAME", "gpt-image-1")
+IMAGE_MODEL_NAME = os.environ.get("IMAGE_MODEL_NAME", "gpt-image-2.5-flare")
 IMAGE_MODEL_PROVIDER = os.environ.get("IMAGE_MODEL_PROVIDER", "openai")
 
 ENABLE_EMAIL_INVITES = os.environ.get("ENABLE_EMAIL_INVITES", "").lower() == "true"
@@ -1959,6 +1961,12 @@ MCP_SERVER_CORS_ORIGINS = [
     if origin.strip()
 ]
 
+# Run every MCP document search in retrieval-only mode (no LLM calls), whatever
+# the client asks for.
+MCP_SERVER_SEARCH_RETRIEVAL_ONLY = (
+    os.environ.get("MCP_SERVER_SEARCH_RETRIEVAL_ONLY", "").lower() == "true"
+)
+
 
 POD_NAME = os.environ.get("POD_NAME")
 POD_NAMESPACE = os.environ.get("POD_NAMESPACE")
@@ -1997,8 +2005,9 @@ SIGNUP_RATE_LIMIT_ENABLED = (
 
 MOCK_CONNECTOR_FILE_PATH = os.environ.get("MOCK_CONNECTOR_FILE_PATH")
 
-
-DEFAULT_IMAGE_ANALYSIS_MAX_SIZE_MB = 20
+# Where providers reach the webhook server. Set it when the API and web hosts
+# differ: the Helm webhook ingress is on `ingress.api.host`.
+WEBHOOK_PUBLIC_URL = os.environ.get("WEBHOOK_PUBLIC_URL") or WEB_DOMAIN
 
 # Global limit on indexing embedding requests (see embedding_rate_limit.py).
 # The window is stored in Redis, one entry per request, so the request count
@@ -2120,6 +2129,14 @@ if _uses_default_object_storage_credentials(
 S3_GENERATE_LOCAL_CHECKSUM = (
     os.environ.get("S3_GENERATE_LOCAL_CHECKSUM", "").lower() == "true"
 )
+
+# Presigned file store URLs. Keep them short: an S3 URL also stops working when
+# the session credentials that signed it expire.
+FILE_STORE_PRESIGN_DEFAULT_TTL_SECONDS = 5 * 60
+FILE_STORE_PRESIGN_MAX_TTL_SECONDS = 15 * 60
+# The largest single S3 PUT. It also bounds the hash that finalize computes on
+# stores that keep no SHA-256.
+FILE_STORE_PRESIGN_MAX_UPLOAD_BYTES = 5 * 1024 * 1024 * 1024
 
 # The bundled MinIO that releases before the object store wrote to. A hand-run
 # upgrade keeps this endpoint in .env, so the files stay in MinIO.

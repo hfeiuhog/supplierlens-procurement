@@ -92,6 +92,9 @@ BATCH_SIZE_ENCODE_CHUNKS_FOR_API_EMBEDDING_SERVICES = EMBEDDING_BATCH_SIZE or 51
 GEN_AI_API_KEY = os.environ.get("GEN_AI_API_KEY")
 GEN_AI_MODEL_VERSION = os.environ.get("GEN_AI_MODEL_VERSION")
 
+# Fallback OpenAI model when no recommended or configured default exists.
+DEFAULT_OPENAI_MODEL = "gpt-6-luna"
+
 # Override the auto-detection of LLM max context length
 GEN_AI_MAX_TOKENS = int(os.environ.get("GEN_AI_MAX_TOKENS") or 0) or None
 
@@ -172,11 +175,6 @@ if _LITELLM_EXTRA_BODY_RAW:
 #####
 # Prompt Caching Configs
 #####
-# Enable prompt caching framework
-ENABLE_PROMPT_CACHING = (
-    os.environ.get("ENABLE_PROMPT_CACHING", "true").lower() != "false"
-)
-
 # Cache TTL multiplier - store caches slightly longer than provider TTL
 # This allows for some clock skew and ensures we don't lose cache metadata prematurely
 PROMPT_CACHE_REDIS_TTL_MULTIPLIER = float(

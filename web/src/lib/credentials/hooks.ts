@@ -1,5 +1,6 @@
 "use client";
 
+import { useNavigation } from "@opal/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   getSourceDisplayName,
@@ -9,13 +10,10 @@ import { useTranslations } from "next-intl";
 import useSWR, { mutate, useSWRConfig } from "swr";
 import { getConnectorOauthRedirectUrl } from "@/lib/connectors/svc";
 import {
-  adminDeleteCredential,
   deleteCredential,
   startCredentialCheckRun,
   updateCredentialSharing,
 } from "@/lib/credentials/svc";
-import { usePermissionAuthority } from "@/lib/permissions/hooks";
-import { Permission } from "@/lib/types";
 import {
   getCredentialCreationMethods,
   getCredentialSpec,
@@ -174,13 +172,11 @@ export function useCredentialLoad(
 export function useCredentialSetup(sourceType: ValidSources): CredentialSetup {
   const { credentials, oauthDetails, isLoading, error } =
     useCredentialLoad(sourceType);
-  const { isGlobalHolder } = usePermissionAuthority(
-    Permission.MANAGE_CONNECTORS
-  );
   const [openMethod, setOpenMethod] = useState<CredentialCreationMethod | null>(
     null
   );
   const [isAuthorizing, setIsAuthorizing] = useState(false);
+  const navigation = useNavigation();
 
   const displayName = getSourceDisplayName(sourceType) || sourceType;
   const methods = getCredentialCreationMethods(oauthDetails);
@@ -216,10 +212,7 @@ export function useCredentialSetup(sourceType: ValidSources): CredentialSetup {
     if (method === CredentialCreationMethod.OAuth && oauthDetails) {
       if (shouldRedirectToOAuth(oauthDetails)) {
         try {
-          window.location.href = await getConnectorOauthRedirectUrl(
-            sourceType,
-            {}
-          );
+          navigation.load(await getConnectorOauthRedirectUrl(sourceType, {}));
         } catch (error) {
           return errorMessage(error);
         }
@@ -239,12 +232,8 @@ export function useCredentialSetup(sourceType: ValidSources): CredentialSetup {
   ): Promise<string | null> {
     let response: Response;
     try {
-      // A global connector manager sees every credential and deletes any of
-      // them through the admin route. A scoped manager may not use that
-      // route; they delete through the owner route, which covers their own.
-      response = isGlobalHolder
-        ? await adminDeleteCredential(credential.id)
-        : await deleteCredential(credential.id);
+      // Only the owner may delete a credential.
+      response = await deleteCredential(credential.id);
     } catch (error) {
       // The request never landed, so nothing changed and nothing refreshes.
       return errorMessage(error) || failureMessage;
@@ -276,6 +265,10 @@ export function useCredentialSetup(sourceType: ValidSources): CredentialSetup {
 
   async function authorize(invalidUrlMessage: string): Promise<string | null> {
     setIsAuthorizing(true);
+    // Open the tab inside the click: popup blockers, and the desktop app,
+    // only allow windows that the user gesture opens.
+    const popup = window.open("about:blank", "_blank");
+    if (popup) popup.opener = null;
     try {
       // Read at call time: the page can change its own query string, and a
       // click only ever happens in the browser.
@@ -284,10 +277,18 @@ export function useCredentialSetup(sourceType: ValidSources): CredentialSetup {
         window.location.href,
         invalidUrlMessage
       );
-      if (!response.url) return invalidUrlMessage;
-      window.open(response.url, "_blank", "noopener,noreferrer");
+      if (!response.url) {
+        popup?.close();
+        return invalidUrlMessage;
+      }
+      if (popup) {
+        popup.location.href = response.url;
+      } else {
+        window.open(response.url, "_blank", "noopener,noreferrer");
+      }
       return null;
     } catch (error) {
+      popup?.close();
       return errorMessage(error);
     } finally {
       setIsAuthorizing(false);

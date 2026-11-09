@@ -96,6 +96,8 @@ describe("useBuildStreaming thinking packets", () => {
       run_id: "scheduled-run",
       task_id: "task",
       task_name: "Task",
+      revision: 0,
+      viewed_revision: null,
       status: "SUCCEEDED",
       started_at: "2026-10-10T00:00:00Z",
       finished_at: null,
@@ -2020,7 +2022,7 @@ describe("useBuildStreaming thinking packets", () => {
       session_loaded_in_sandbox: true,
       sandbox: { id: "sandbox-1", status: "running" },
       agent_provider: "openai",
-      agent_model: "gpt-5-mini",
+      agent_model: "gpt-6-luna",
     } as never);
     jest
       .mocked(fetchActiveTurn)
@@ -3275,6 +3277,8 @@ describe("useBuildStreaming thinking packets", () => {
         run_id: "scheduled-run",
         task_id: "task",
         task_name: "Task",
+        revision: 0,
+        viewed_revision: null,
         started_at: "2026-10-10T00:00:00Z",
         finished_at: null,
       };
@@ -3343,6 +3347,8 @@ describe("useBuildStreaming thinking packets", () => {
         run_id: "scheduled-run",
         task_id: "task",
         task_name: "Task",
+        revision: 0,
+        viewed_revision: null,
         started_at: "2026-10-12",
         finished_at: null,
       };
@@ -3872,6 +3878,8 @@ describe("useBuildStreaming thinking packets", () => {
         run_id: "scheduled-run",
         task_id: "task",
         task_name: "Task",
+        revision: 0,
+        viewed_revision: null,
         started_at: "2026-10-12T00:00:00Z",
         finished_at: null,
       };

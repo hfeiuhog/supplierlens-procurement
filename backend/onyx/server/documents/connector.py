@@ -53,6 +53,12 @@ from onyx.connectors.credential_families import (
     is_credential_usable_for_source,
     to_source_credential_json,
 )
+from onyx.connectors.event_inbox.models import WebhookSourceSpec
+from onyx.connectors.event_inbox.source_registry import (
+    registered_webhook_sources,
+    webhook_callback_url,
+)
+from onyx.connectors.event_inbox.sources import load_event_sources
 from onyx.connectors.exceptions import ConnectorValidationError, ValidationError
 from onyx.connectors.factory import (
     validate_ccpair_for_user,
@@ -99,6 +105,7 @@ from onyx.db.connector_credential_pair import (
     verify_user_can_edit_connector,
     verify_user_can_manage_all_cc_pairs,
 )
+from onyx.db.connector_event_inbox import get_active_event_cc_pairs
 from onyx.db.credentials import (
     create_credential,
     discard_credential_if_unpaired,
@@ -136,6 +143,7 @@ from onyx.db.models import (
     IndexingStatus,
     User,
 )
+from onyx.db.search_settings import raise_if_port_reindex_in_progress
 from onyx.error_handling.error_codes import OnyxErrorCode
 from onyx.error_handling.exceptions import OnyxError
 from onyx.file_processing.zip_limits import (
@@ -155,6 +163,9 @@ from onyx.file_store.file_store import (
 )
 from onyx.redis.redis_pool import get_redis_client
 from onyx.redis.redis_tenant_work_gating import maybe_mark_tenant_active
+from onyx.server.documents.capability_check_runs import (
+    start_capability_checks_for_new_credential,
+)
 from onyx.server.documents.cc_pair import authorize_pairing
 from onyx.server.documents.credential import (
     assert_credential_sharing_allowed,
@@ -180,6 +191,7 @@ from onyx.server.documents.models import (
     CredentialSharing,
     CredentialSnapshot,
     DocsCountOperator,
+    EventSourceSnapshot,
     FailedConnectorIndexingStatus,
     FileUploadResponse,
     GDriveCallback,
@@ -1906,6 +1918,10 @@ def create_connector_with_credential(
         )
         raise
 
+    if promoted_draft_id is not None:
+        # Draft runs write no reports, so the new account gets its own run.
+        start_capability_checks_for_new_credential(db_session, credential)
+
     maybe_mark_tenant_active(tenant_id, caller="cc_pair_lifecycle")
     client_app.send_task(
         OnyxCeleryTask.CHECK_FOR_INDEXING,
@@ -2452,6 +2468,11 @@ def trigger_indexing_for_cc_pair(
             "Connector has no valid credentials, cannot create index attempts."
         )
 
+    # A crawl from the beginning cannot start while a reindex builds FUTURE; an
+    # incremental run can. Checked once, before any pair is marked.
+    if from_beginning:
+        raise_if_port_reindex_in_progress(db_session)
+
     # Prevents index attempts for cc pairs that already have an index attempt currently running
     skipped_credentials = [
         credential_id
@@ -2484,6 +2505,15 @@ def trigger_indexing_for_cc_pair(
             if from_beginning:
                 indexing_mode = IndexingMode.REINDEX
 
+            # A queued full run covers an update; do not downgrade it. It can
+            # sit for a while when a port-flow reindex holds it until the swap.
+            if (
+                indexing_mode == IndexingMode.UPDATE
+                and cc_pair.indexing_trigger == IndexingMode.REINDEX
+            ):
+                num_triggers += 1
+                continue
+
             mark_ccpair_with_indexing_trigger(cc_pair.id, indexing_mode, db_session)
             num_triggers += 1
 
@@ -2505,3 +2535,32 @@ def trigger_indexing_for_cc_pair(
     )
 
     return num_triggers
+
+
+@router.get("/admin/connector/event-sources")
+def get_event_sources(
+    _: User = Depends(require_permission(Permission.MANAGE_CONNECTORS)),
+    db_session: Session = Depends(get_session),
+) -> list[EventSourceSnapshot]:
+    """The sources that can receive pushed events, and their endpoints."""
+    load_event_sources()
+    return [
+        EventSourceSnapshot(
+            source=spec.source,
+            callback_urls=[
+                webhook_callback_url(spec.slug, endpoint) for endpoint in spec.endpoints
+            ],
+            receiving=_is_receiving(
+                spec, len(get_active_event_cc_pairs(db_session, spec.source))
+            ),
+        )
+        for spec in registered_webhook_sources()
+    ]
+
+
+def _is_receiving(spec: WebhookSourceSpec, active_pairs: int) -> bool:
+    """An unsigned source refuses deliveries once several pairs are active,
+    since it cannot tell them apart."""
+    if spec.verifier is None:
+        return active_pairs == 1
+    return active_pairs > 0

@@ -109,7 +109,7 @@ function EntryPickerPopover({
   if (!anchorRect) return null;
 
   // `position: fixed` is containing-block-relative under a transformed
-  // ancestor (Storybook docs view, some app shells), so portal to body to
+  // ancestor (some app shells), so portal to body to
   // keep the anchor's coords viewport-relative.
   if (typeof document === "undefined") return null;
 
@@ -280,9 +280,8 @@ function SkillRow({
   return (
     <div className="cursor-pointer">
       <LineItemButton
+        font="main-ui-action"
         presentational
-        sizePreset="main-ui"
-        variant="section"
         title={`/${slug}`}
         titleMaxLines={1}
         state={selected ? "selected" : "empty"}
@@ -332,13 +331,13 @@ function ConnectableRow({
           and the unauthenticated dimming becomes the muted colour mode
           rather than opacity on a hand-rolled span. */}
       <LineItemButton
+        font="main-ui-action"
         presentational
-        sizePreset="main-ui"
-        variant="section"
         icon={Logo}
         title={name}
         titleMaxLines={1}
-        color={unauth ? "muted" : undefined}
+        color={unauth ? "default" : undefined}
+        titleColor={unauth ? "text-03" : undefined}
         state={selected ? "selected" : "empty"}
         selectVariant="select-heavy"
         description={

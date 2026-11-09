@@ -200,7 +200,6 @@ export default function SecurityHardeningPage() {
             rollbackOnError: true,
           }
         );
-        toast.success(t("toasts.settingsUpdated"));
       } catch (err) {
         console.error("Failed to update workspace settings", err);
         const message =
@@ -263,7 +262,6 @@ export default function SecurityHardeningPage() {
             revalidate: false,
           });
         }
-        toast.success(t("toasts.securitySettingsUpdated"));
       } catch (error) {
         // Re-sync from the server (the source of truth) rather than a possibly
         // stale local snapshot — a late failure must not clobber other edits
@@ -370,9 +368,8 @@ export default function SecurityHardeningPage() {
         {/* Authentication */}
         <div className="flex w-full flex-col gap-3">
           <Content
+            font="main-content-emphasis"
             title={t("authentication.section.title")}
-            sizePreset="main-content"
-            variant="section"
           />
 
           <Card border="solid" rounding={4}>
@@ -394,6 +391,15 @@ export default function SecurityHardeningPage() {
                   void saveSettings({
                     allow_same_provider_subject_relink: checked,
                   })
+                }
+              />
+
+              <ToggleRow
+                title={t("authentication.renamedClaim.title")}
+                description={t("authentication.renamedClaim.description")}
+                checked={draft.allow_renamed_account_claim}
+                onCheckedChange={(checked) =>
+                  void saveSettings({ allow_renamed_account_claim: checked })
                 }
               />
 
@@ -468,10 +474,9 @@ export default function SecurityHardeningPage() {
             <Card border="solid" rounding={4}>
               <Section>
                 <Content
+                  font="main-ui-action"
                   title={t("passwordPolicy.section.title")}
                   description={t("passwordPolicy.section.description")}
-                  sizePreset="main-ui"
-                  variant="section"
                 />
 
                 <div className="flex w-full items-start gap-4">
@@ -565,10 +570,9 @@ export default function SecurityHardeningPage() {
             <Card border="solid" rounding={4}>
               <Section>
                 <Content
+                  font="main-ui-action"
                   title={t("jwt.section.title")}
                   description={t("jwt.section.description")}
-                  sizePreset="main-ui"
-                  variant="section"
                 />
 
                 <JwtTextRow
@@ -611,9 +615,8 @@ export default function SecurityHardeningPage() {
         {/* Admin Controls */}
         <div className="flex w-full flex-col gap-3">
           <Content
+            font="main-content-emphasis"
             title={t("adminControls.section.title")}
-            sizePreset="main-content"
-            variant="section"
           />
 
           <Card border="solid" rounding={4}>
@@ -811,9 +814,8 @@ export default function SecurityHardeningPage() {
             (operator-controlled, env-driven in multi-tenant cloud). */}
         <div className="flex w-full flex-col gap-3">
           <Content
+            font="main-content-emphasis"
             title={t("networkSafety.section.title")}
-            sizePreset="main-content"
-            variant="section"
           />
 
           <Card border="solid" rounding={4}>

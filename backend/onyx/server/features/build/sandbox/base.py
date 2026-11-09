@@ -195,7 +195,7 @@ class SandboxManager(_ServeMixin, ABC):
     supports_opencode_history_persistence: bool = False
 
     def iter_resources(
-        self, tenant_id: str, deadline: float
+        self, tenant_id: str, deadline: float, sandbox_id: UUID | None = None
     ) -> Iterator[SandboxResource]:
         """Inventory only this deployment's resources, including partial provisions."""
         raise NotImplementedError
@@ -217,6 +217,26 @@ class SandboxManager(_ServeMixin, ABC):
     ) -> str | None:
         """Identify the owned workspace instance, or confirm its absence."""
         raise NotImplementedError
+
+    def terminate_observed_resources(
+        self,
+        sandbox_id: UUID,
+        resources: list[SandboxResource],
+        deadline: float,
+    ) -> None:
+        self._close_all_sandbox_buses(sandbox_id)
+        errors: list[Exception] = []
+        for resource in resources:
+            try:
+                if resource.sandbox_id != sandbox_id:
+                    raise ValueError("Cleanup resource belongs to another sandbox")
+                self.delete_resource(resource, deadline)
+            except Exception as e:
+                errors.append(e)
+        if errors:
+            raise RuntimeError(
+                f"Sandbox {sandbox_id} cleanup incomplete: {errors}"
+            ) from errors[0]
 
     def _ensure_document_preview_bundle(
         self, sandbox_id: UUID, run_command: Callable[[list[str]], str]
@@ -271,10 +291,8 @@ class SandboxManager(_ServeMixin, ABC):
             tenant_id: Tenant identifier for multi-tenant isolation
             onyx_pat: Raw PAT token to inject as ONYX_PAT env var in the sandbox
             provisioning_attempt_number: This attempt's number; stamped onto
-                backend resources at creation so operators can attribute
-                orphans (never read programmatically — the attempt-number
-                condition on DB status writes is what blocks stale
-                attempts).
+                backend resources for cleanup ownership checks. Database writes
+                also require the same current attempt number.
 
         Returns:
             SandboxInfo with the provisioned sandbox details

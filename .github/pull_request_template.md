@@ -1,11 +1,20 @@
-## Description
+## Problem and resulting behavior
 
-<!--- Provide a brief description of the changes in this PR --->
+Describe the concrete problem and the behavior after this change.
 
-## How Has This Been Tested?
+## Scope
 
-<!--- Describe the tests you ran to verify your changes --->
+- Base repository: `hfeiuhog/supplierlens-procurement`
+- Base branch: `enterprise`
+- Related issue, if any:
 
-## Additional Options
+## Validation
 
-- [ ] [Optional] Please cherry-pick this PR to the latest release version.
+List the commands and results. State any checks that were not run.
+Use synthetic examples and remove secrets from logs.
+
+## Compatibility
+
+Describe any API, schema, configuration, or deployment changes.
+Keep existing licenses, notices, and attribution.
+Disclose material AI assistance and verify the submitted result.

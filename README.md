@@ -38,3 +38,12 @@ flowchart LR
 
 新增实现使用 AI 辅助。上游平台能力归 Onyx 及其贡献者；本次贡献以固定基线之后的 diff 为准。保留原有 LICENSE、NOTICE 与作者署名。
 Onyx 仓库有 CE/EE 授权边界，本次修改位于社区版路径；未修改或解除 EE 的商业授权要求。完整许可见 [LICENSE](LICENSE)。
+
+## 开放协作
+
+本仓库公开，欢迎 Clone、Fork、反馈问题和提交改进。
+请将本扩展的 PR 提交到 **`hfeiuhog/supplierlens-procurement` 的 `enterprise` 分支**。
+
+[报告问题 / 功能建议](https://github.com/hfeiuhog/supplierlens-procurement/issues/new/choose) · [贡献指南](CONTRIBUTING.md) · [同步说明](enterprise/COLLABORATION.md)
+
+上游基础能力与贡献者署名继续保留。本 fork 的提交、测试和扩展代码可供核对；上游是否接受贡献以对应 PR 的审核结果为准。

@@ -1,6 +1,9 @@
 name: Enterprise extension CI
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [enterprise]
+    paths: ['enterprise/**', 'backend/onyx/db/procurement.py', 'backend/onyx/server/manage/procurement/**', 'backend/alembic/**', 'web/**', '.github/workflows/enterprise-ci.yml']
   push:
     branches: [enterprise]
     paths: ['enterprise/**', 'backend/onyx/db/procurement.py', 'backend/onyx/server/manage/procurement/**', 'backend/alembic/**', 'web/**', '.github/workflows/enterprise-ci.yml']

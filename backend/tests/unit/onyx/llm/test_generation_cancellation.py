@@ -3,6 +3,7 @@ import pytest
 from onyx.llm.cancellation import (
     AgentCancelled,
     CancellationSignal,
+    CancelReason,
     cancellation_scope,
     current_cancellation,
 )
@@ -41,7 +42,7 @@ def test_cancelled_generation_never_calls_provider(streaming: bool) -> None:
     client = LitellmLLM(
         api_key="test",
         model_provider="openai",
-        model_name="gpt-5-mini",
+        model_name="gpt-6-luna",
         max_input_tokens=1000,
     )
     with patch("onyx.llm.litellm_singleton.litellm.completion") as completion:
@@ -74,7 +75,7 @@ def test_cancelled_provider_failure_does_not_retry(rejection: bool) -> None:
     client = LitellmLLM(
         api_key="test",
         model_provider="openai",
-        model_name="gpt-5-mini",
+        model_name="gpt-6-luna",
         max_input_tokens=1000,
     )
 
@@ -82,7 +83,7 @@ def test_cancelled_provider_failure_does_not_retry(rejection: bool) -> None:
         signal.cancel()
         error = BadRequestError if rejection else Timeout
         raise error(
-            message="provider failure", model="gpt-5-mini", llm_provider="openai"
+            message="provider failure", model="gpt-6-luna", llm_provider="openai"
         )
 
     errors: list[GenerationErrorEvent] = []
@@ -121,7 +122,7 @@ def test_stream_cancellation_preserves_partial_text_and_closes_client() -> None:
     client = LitellmLLM(
         api_key="test",
         model_provider="openai",
-        model_name="gpt-5-mini",
+        model_name="gpt-6-luna",
         max_input_tokens=1000,
     )
     chunks = [
@@ -154,3 +155,20 @@ def test_stream_cancellation_preserves_partial_text_and_closes_client() -> None:
     assert len(errors) == 1
     assert completion.call_count == 1
     assert current_cancellation() is None
+
+
+@pytest.mark.parametrize("reason", ["requested", "deadline"])
+def test_generation_scope_preserves_parent_cancellation_reason(
+    reason: CancelReason,
+) -> None:
+    from onyx.llm.interfaces import GenerationContext
+    from onyx.llm.multi_llm import _generation_scope
+
+    parent = CancellationSignal()
+    with _generation_scope(
+        GenerationContext(cancellation=parent, total_timeout_s=10)
+    ) as child:
+        parent.cancel(reason)
+        assert child.reason == reason
+        with pytest.raises(AgentCancelled):
+            child.check()

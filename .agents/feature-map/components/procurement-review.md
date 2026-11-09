@@ -1,6 +1,6 @@
 # Procurement review
 
-A CE-path extension. The Next.js admin page submits structured evidence references to the FastAPI router; SQLAlchemy Core stores the immutable payload and versioned review/audit state in the current tenant session. Migration sl20261023a follows c5178de73522; Alembic target metadata includes procurement_metadata.
+A CE-path extension. The Next.js admin page submits structured evidence references to the FastAPI router; SQLAlchemy Core stores the immutable payload and versioned review/audit state in the current tenant session. Migration sl20261023a follows c5178de73522; Alembic target metadata includes procurement_metadata. Merge revision sl20261109m joins the procurement branch with upstream revision c3e8a1f5d702. It changes no schema and keeps one migration head.
 
 Entry points: `/admin/procurement` frontend, `/admin/procurement` API under the deployment's API prefix. All API endpoints use require_permission(FULL_ADMIN_PANEL_ACCESS). Only the author can submit; a different authorized user can approve/reject. Every administrator in that tenant may list/read reviews. No custom project-scoped permission is implied.
 

@@ -324,9 +324,6 @@ function OutputsBrowser({
         <div className="flex items-center ps-0.5 pb-3">
           <Tag
             title={t("scope.turn", { turn: turnIndex + 1 })}
-            color="blue"
-            size="md"
-            font="secondary-body"
             onRemove={onTurnChange ? () => onTurnChange(null) : undefined}
           />
         </div>

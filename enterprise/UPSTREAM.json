@@ -4,5 +4,7 @@
   "base_commit": "f1fa7005725263df1bbdc6278b62ed804225a75d",
   "extension_branch": "enterprise",
   "scope": "采购知识协同与供应商证据审查",
-  "assisted_implementation": true
+  "assisted_implementation": true,
+  "last_synced_commit": "434308d0e3bdf3e7eb49554b38af447c25edcdfd",
+  "last_synced_date": "2026-11-09"
 }

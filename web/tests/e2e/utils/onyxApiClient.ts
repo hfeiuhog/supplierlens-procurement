@@ -1,4 +1,5 @@
 import { APIRequestContext, expect, APIResponse } from "@playwright/test";
+import { CI_OPENAI_MODEL } from "@tests/e2e/constants";
 import {
   MOCK_LLM_API_KEY,
   MOCK_LLM_DEFAULT_MODEL,
@@ -102,6 +103,7 @@ export interface CreateAgentOptions {
  * - `getUserGroups()` - Lists all user groups (including default system groups)
  * - `createUserGroup(name)` - Creates a user group
  * - `addUsersToGroup(groupId, userIds)` - Adds users to a user group
+ * - `getUserGroupPermissions(groupId)` - Lists group permission grants
  * - `setUserGroupPermissions(groupId, permissions)` - Replaces group permission grants
  * - `deleteUserGroup(id)` - Deletes a user group
  *
@@ -586,7 +588,7 @@ export class OnyxApiClient {
           name: providerName,
           provider: "openai",
           api_key: E2E_LLM_PROVIDER_API_KEY,
-          default_model_name: "gpt-4o",
+          default_model_name: CI_OPENAI_MODEL,
           is_public: false,
           groups: [groupId],
           personas: [],
@@ -621,7 +623,7 @@ export class OnyxApiClient {
           personas: agentIds,
           model_configurations: [
             {
-              name: "gpt-4o",
+              name: CI_OPENAI_MODEL,
               custom_display_name: providerName,
               is_visible: true,
             },
@@ -657,7 +659,7 @@ export class OnyxApiClient {
           is_public: true,
           groups: [],
           personas: [],
-          model_configurations: [{ name: "gpt-4o", is_visible: true }],
+          model_configurations: [{ name: CI_OPENAI_MODEL, is_visible: true }],
         },
       }
     );
@@ -793,43 +795,61 @@ export class OnyxApiClient {
   }
 
   /**
-   * Creates or updates a per-model cost override.
+   * Creates a cost override for a provider's first model configuration.
    *
-   * @param model - Model id the negotiated rate applies to
-   * @returns The model id, for asserting the row renders
+   * @param providerId - LLM provider whose first model gets the override
+   * @returns The model configuration id (for cleanup) and the display name
+   * the override card shows
    */
-  async upsertCostOverride(model: string): Promise<string> {
-    const response = await this.put("/admin/cost-overrides", {
-      model,
+  async createCostOverride(
+    providerId: number
+  ): Promise<{ modelConfigurationId: number; modelDisplayName: string }> {
+    const providersResponse = await this.get("/admin/llm/provider");
+    const { providers } = await this.handleResponse<{
+      providers: Array<{
+        id: number;
+        model_configurations: Array<{ id: number }>;
+      }>;
+    }>(providersResponse, "Failed to list LLM providers");
+    const modelConfigurationId = providers.find((p) => p.id === providerId)
+      ?.model_configurations[0]?.id;
+    if (modelConfigurationId === undefined) {
+      throw new Error(`Provider ${providerId} has no model configuration`);
+    }
+
+    const response = await this.post("/admin/cost-overrides", {
+      model_configuration_id: modelConfigurationId,
       input_cost_per_mtok: 2.5,
       output_cost_per_mtok: 10,
     });
-
-    await this.handleResponse(
+    const override = await this.handleResponse<{ model_display_name: string }>(
       response,
-      `Failed to upsert cost override ${model}`
+      `Failed to create cost override for model ${modelConfigurationId}`
     );
 
-    this.log(`Upserted cost override: ${model}`);
-    return model;
+    this.log(`Created cost override: ${modelConfigurationId}`);
+    return {
+      modelConfigurationId,
+      modelDisplayName: override.model_display_name,
+    };
   }
 
   /**
-   * Deletes a per-model cost override.
+   * Deletes a model configuration's cost override.
    *
-   * @param model - Model id whose override should be removed
+   * @param modelConfigurationId - Model configuration whose override is removed
    */
-  async deleteCostOverride(model: string): Promise<void> {
+  async deleteCostOverride(modelConfigurationId: number): Promise<void> {
     const response = await this.delete(
-      `/admin/cost-overrides/${encodeURIComponent(model)}`
+      `/admin/cost-overrides/${modelConfigurationId}`
     );
 
     await this.handleResponseSoft(
       response,
-      `Failed to delete cost override ${model}`
+      `Failed to delete cost override ${modelConfigurationId}`
     );
 
-    this.log(`Deleted cost override: ${model}`);
+    this.log(`Deleted cost override: ${modelConfigurationId}`);
   }
 
   /**
@@ -881,6 +901,19 @@ export class OnyxApiClient {
       `Failed to add users to group ${groupId}`
     );
     this.log(`Added ${userIds.length} user(s) to user group: ${groupId}`);
+  }
+
+  /**
+   * Lists the toggleable permissions granted to a user group.
+   */
+  async getUserGroupPermissions(groupId: number): Promise<string[]> {
+    const response = await this.get(
+      `/manage/admin/user-group/${groupId}/permissions`
+    );
+    return await this.handleResponse<string[]>(
+      response,
+      `Failed to get permissions for user group ${groupId}`
+    );
   }
 
   /**
@@ -1141,7 +1174,12 @@ export class OnyxApiClient {
 
   async createCustomTool(
     name: string,
-    description: string = "E2E test tool"
+    description: string = "E2E test tool",
+    endpoint: { baseUrl: string; path: string; operationId: string } = {
+      baseUrl: "https://example.com",
+      path: "/test",
+      operationId: "testOp",
+    }
   ): Promise<number> {
     const response = await this.post("/admin/tool/custom", {
       name,
@@ -1150,15 +1188,15 @@ export class OnyxApiClient {
         openapi: "3.0.0",
         info: { title: name, description: description, version: "1.0.0" },
         paths: {
-          "/test": {
+          [endpoint.path]: {
             get: {
-              operationId: "testOp",
+              operationId: endpoint.operationId,
               summary: "Test endpoint",
               responses: { "200": { description: "OK" } },
             },
           },
         },
-        servers: [{ url: "https://example.com" }],
+        servers: [{ url: endpoint.baseUrl }],
       },
       passthrough_auth: false,
     });
@@ -1657,20 +1695,20 @@ export class OnyxApiClient {
    * API: POST /api/admin/image-generation/config
    * Schema (ImageGenerationConfigCreate):
    *   - image_provider_id: string (required) - unique key
-   *   - model_name: string (required) - e.g., "gpt-image-1"
+   *   - model_name: string (required) - e.g., "gpt-image-2.5-flare"
    *   - provider: string - e.g., "openai"
    *   - api_key: string
    *   - is_default: boolean
    *
    * @param imageProviderId - Unique identifier for the image generation config
-   * @param modelName - Model name (defaults to "gpt-image-1")
+   * @param modelName - Model name (defaults to "gpt-image-2.5-flare")
    * @param provider - Provider name (defaults to "openai")
    * @param isDefault - Whether this should be the default config (defaults to true)
    * @returns The image_provider_id
    */
   async createImageGenerationConfig(
     imageProviderId: string,
-    modelName: string = "gpt-image-1",
+    modelName: string = "gpt-image-2.5-flare",
     provider: string = "openai",
     isDefault: boolean = true
   ): Promise<string> {

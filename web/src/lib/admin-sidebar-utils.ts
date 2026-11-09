@@ -30,6 +30,7 @@ export type AdminNavItemId =
   | "craftAccess"
   | "craftApps"
   | "craftPreferences"
+  | "skills"
   | "customAnalytics"
   | "agents"
   | "plugins"
@@ -51,6 +52,7 @@ export type AdminNavItemId =
   | "securityAndHardening"
   | "ssoProviders"
   | "usage"
+  | "spendingLimits"
   | "analytics"
   | "queryHistory"
   | "tracing"
@@ -90,6 +92,7 @@ export const NAV_ITEM_IDS: Record<
   CRAFT_ACCESS: "craftAccess",
   CRAFT_APPS: null,
   CRAFT_PREFERENCES: "craftPreferences",
+  SKILLS: "skills",
   CUSTOM_ANALYTICS: "customAnalytics",
   AGENTS: "agents",
   PLUGINS: "plugins",
@@ -116,6 +119,7 @@ export const NAV_ITEM_IDS: Record<
   SECURITY_HARDENING: "securityAndHardening",
   SSO_PROVIDERS: "ssoProviders",
   USAGE: "usage",
+  SPENDING_LIMITS: "spendingLimits",
   WORKSPACE_ANALYTICS: "analytics",
   QUERY_HISTORY: "queryHistory",
   TRACING: "tracing",

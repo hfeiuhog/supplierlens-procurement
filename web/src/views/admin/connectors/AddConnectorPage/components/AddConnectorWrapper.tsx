@@ -1,5 +1,6 @@
 "use client";
 
+import { useNavigation, useSearchParams } from "@opal/navigation";
 import {
   type ReactNode,
   useCallback,
@@ -22,7 +23,6 @@ import {
 } from "@/lib/connectors/utils";
 import { Formik, type FormikErrors } from "formik";
 import * as Yup from "yup";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PageLoader, IconLoader } from "@opal/loaders";
 import {
@@ -46,7 +46,11 @@ import {
   createConnectorWithCredential,
   credentialPairMetadata,
 } from "@/lib/credentials/svc";
-import { submitFiles, submitGoogleSite } from "@/lib/connectors/svc";
+import {
+  readCreatedCCPairId,
+  submitFiles,
+  submitGoogleSite,
+} from "@/lib/connectors/svc";
 import {
   useBindingGateMessage,
   type UseBoundFieldsGateResult,
@@ -92,6 +96,7 @@ import {
   type NewAccountSchema,
 } from "@/views/admin/connectors/AddConnectorPage/newAccount";
 import { deleteConnector } from "@/lib/connector";
+import { type FormikErrorTree, firstFormikError } from "@/lib/formikErrors";
 import {
   SYNC_RESTRICTED_ACCESS_TYPE,
   toManageAccess,
@@ -199,6 +204,8 @@ async function submitConnector<T>(
   errorDetail?: string;
   isSuccess: boolean;
   response?: Connector<T>;
+  /** The pair the mock-credential create made, when it reports one. */
+  ccPairId?: number | null;
 }> {
   const isUpdate = connectorId !== undefined;
   if (!connector.connector_specific_config) {
@@ -218,8 +225,11 @@ async function submitConnector<T>(
         }
       );
       if (response.ok) {
-        const responseJson = await response.json();
-        return { isSuccess: true, response: responseJson };
+        // The mock-credential create answers with the new pair's id.
+        return {
+          isSuccess: true,
+          ccPairId: await readCreatedCCPairId(response),
+        };
       } else {
         const errorData = await response.json();
         return { errorDetail: String(errorData.detail), isSuccess: false };
@@ -263,10 +273,11 @@ export interface AddConnectorFormProps {
 export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
   const t = useTranslations("admin.connectorsList");
   const editT = useTranslations("admin.connectorEdit");
+  const indexingT = useTranslations("admin.indexing");
   const oneDriveT = useTranslations("admin.connectorsList.oneDrive");
   // The string-pair editor (InputKeyValue) shows these same messages.
   const keyValueT = useTranslations("opal.keyValue");
-  const router = useRouter();
+  const navigation = useNavigation();
   const settings = useSettings();
   // Whether the source's checks can run on a schedule (Run Checks Every).
   const [hasNamedChecks, setHasNamedChecks] = useState(false);
@@ -478,8 +489,15 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
     : headerSentence;
   const sourceMetadata = getSourceMetadata(connector);
   const hasFederatedOption = sourceMetadata.federated === true;
-  const onSuccess = () => {
-    router.push("/admin/indexing-status?message=connector-created");
+  // A new connector opens on its own page, as a saved edit does. Without
+  // the pair's id, the status page lists it.
+  const onSuccess = (ccPairId: number | null) => {
+    toast.success(indexingT("connectorCreated.toast"));
+    navigation.go(
+      ccPairId === null
+        ? "/admin/indexing-status"
+        : `/admin/connector/${ccPairId}`
+    );
   };
 
   const credentialsFailed = credentialLoadError !== undefined;
@@ -499,13 +517,17 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
   }
 
   /**
-   * Whether the form's errors allow Create. A typed account's errors do not
+   * The form's errors that block Create. A typed account's errors do not
    * while a saved account is picked: the typed one is not used then.
    */
+  const blockingErrors = (errors: FormikErrors<unknown>): FormikErrorTree[] =>
+    Object.entries<FormikErrorTree>(errors)
+      .filter(
+        ([key]) => key !== NEW_ACCOUNT_FIELD || currentCredential === null
+      )
+      .map(([, error]) => error);
   const blockingErrorsEmpty = (errors: FormikErrors<unknown>): boolean =>
-    Object.keys(errors).every(
-      (key) => key === NEW_ACCOUNT_FIELD && currentCredential !== null
-    );
+    blockingErrors(errors).length === 0;
 
   const createConnectorFromForm = async (
     values: typeof initialValues
@@ -575,7 +597,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
         manageAccess
       );
       if (response) {
-        onSuccess();
+        onSuccess(response.ccPairId);
       }
       return;
     }
@@ -592,7 +614,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
           manageAccess
         );
         if (response) {
-          onSuccess();
+          onSuccess(response.ccPairId);
         }
       } catch (error) {
         toast.error(t("add.fileUploadFailed.toast"));
@@ -605,11 +627,8 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
 
     setCreatingConnector(true);
     try {
-      const timeoutPromise = new Promise<{ isTimeout: true }>((resolve) =>
-        setTimeout(
-          () => resolve({ isTimeout: true }),
-          CONNECTOR_CREATION_TIMEOUT_MS
-        )
+      const timeoutPromise = new Promise<"timeout">((resolve) =>
+        setTimeout(() => resolve("timeout"), CONNECTOR_CREATION_TIMEOUT_MS)
       );
 
       const connectorData: ConnectorBase<any> = {
@@ -632,7 +651,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
       const connectorCreationPromise = (async () => {
         const credential = noCredentials ? null : accountFor(values);
         if (!credential) {
-          const { errorDetail, isSuccess, response } =
+          const { errorDetail, isSuccess, response, ccPairId } =
             await submitConnector<any>(connectorData, undefined, true);
 
           // Store the connector id immediately for potential timeout
@@ -640,7 +659,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
             connectorIdRef.current = response.id;
           }
           if (isSuccess) {
-            onSuccess();
+            onSuccess(ccPairId ?? null);
           } else {
             toast.error(t("add.error.toast", { detail: errorDetail ?? "" }));
           }
@@ -671,7 +690,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
               : undefined,
           });
           if (createResponse.ok) {
-            onSuccess();
+            onSuccess(await readCreatedCCPairId(createResponse));
           } else if (!timeoutErrorHappenedRef.current) {
             // Only show error if timeout didn't happen
             const errorData = await createResponse.json();
@@ -693,14 +712,12 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
         return;
       })();
 
-      const result = (await Promise.race([
-        connectorCreationPromise,
+      const result = await Promise.race([
+        connectorCreationPromise.then(() => "created" as const),
         timeoutPromise,
-      ])) as {
-        isTimeout?: true;
-      };
+      ]);
 
-      if (result.isTimeout) {
+      if (result === "timeout") {
         timeoutErrorHappenedRef.current = true;
         toast.error(
           t("add.timeout.toast", {
@@ -838,17 +855,20 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
               // fields and the checks hold back Create, not the form, so a
               // check run never locks the field that started it.
               const formUnlocked: boolean = canCreate;
-              const formLockReason: string | undefined = formUnlocked
-                ? undefined
-                : (selectAccountMessage ?? undefined);
+              // The same reason whether or not the form is locked: Disabled
+              // only shows it while locked, and a steady tooltip keeps the
+              // form mounted across a lock toggle.
+              const formLockReason: string | undefined =
+                selectAccountMessage ?? undefined;
               // Non-required checks never block Create.
               const createReady: boolean =
                 configUnlocked && (noCredentials || checks.createReady);
               const createLockReason: string | undefined = !configUnlocked
                 ? (gateMessage ?? undefined)
-                : createReady
-                  ? undefined
-                  : checksT("lockReason");
+                : !createReady
+                  ? checksT("lockReason")
+                  : (firstFormikError(blockingErrors(formikProps.errors)) ??
+                    undefined);
               const hasContentFields: boolean =
                 visibleConnectorFields(
                   contentConfiguration,
@@ -868,7 +888,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
                 !createReady ||
                 busy;
               return (
-                <SettingsLayouts.Root width="sm">
+                <SettingsLayouts.Root loading={credentialsLoading} width="sm">
                   <SettingsLayouts.Header
                     icon={sourceMetadata.icon}
                     moreIcon1={SvgArrowExchange}
@@ -899,7 +919,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
                         prominence="secondary"
                         disabled={busy}
                         onClick={() =>
-                          router.push(
+                          navigation.go(
                             edit
                               ? `/admin/connector/${edit.ccPair.id}`
                               : "/admin/connectors"
@@ -925,6 +945,11 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
                             // Formik's own submit stops at any error.
                             await submitForm(formikProps.values);
                           } else {
+                            // The failing field can sit in a folded section, so name it.
+                            const message = firstFormikError(
+                              blockingErrors(errors)
+                            );
+                            if (message !== null) toast.error(message);
                             // Marks every field touched, so its error shows.
                             formikProps.handleSubmit();
                           }
@@ -945,7 +970,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
                           <Button
                             prominence="secondary"
                             onClick={() =>
-                              router.push(
+                              navigation.go(
                                 `/admin/connectors/${connector}?mode=federated`
                               )
                             }
@@ -958,9 +983,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
                   </SettingsLayouts.Header>
 
                   <SettingsLayouts.Body>
-                    {credentialsLoading ? (
-                      <PageLoader />
-                    ) : credentialsFailed ? (
+                    {credentialsFailed ? (
                       // The same frame as PageLoader, so loading and failure sit
                       // in one place.
                       <PageCenter>
@@ -1160,7 +1183,7 @@ export function AddConnectorForm({ connector, edit }: AddConnectorFormProps) {
                           );
                           if (outcome.kind === "applied") {
                             toast.success(editT("applied.toast"));
-                            router.push(`/admin/connector/${edit.ccPair.id}`);
+                            navigation.go(`/admin/connector/${edit.ccPair.id}`);
                           }
                           return outcome;
                         }}
@@ -1187,9 +1210,9 @@ export default function AddConnectorWrapper({
   connector,
 }: AddConnectorWrapperProps) {
   const t = useTranslations("admin.connectorsList");
-  const router = useRouter();
+  const navigation = useNavigation();
   const searchParams = useSearchParams();
-  const mode = searchParams?.get("mode"); // 'federated' or 'regular'
+  const mode = searchParams.get("mode"); // 'federated' or 'regular'
 
   useToastFromQuery({
     oauth_failed: {
@@ -1207,7 +1230,7 @@ export default function AddConnectorWrapper({
         />
         <SettingsLayouts.Body>
           <div className="me-auto">
-            <Button onClick={() => router.push("/admin/indexing-status")}>
+            <Button onClick={() => navigation.go("/admin/indexing-status")}>
               {t("invalidConnector.homeButton.label")}
             </Button>
           </div>

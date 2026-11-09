@@ -186,11 +186,12 @@ export class OneDriveConnectorSetupPage {
     await expect(
       this.page.getByRole("button", { name: "Create Connector", exact: true })
     ).toBeDisabled();
-    await expect(this.page.getByText(message)).toBeVisible();
+    // The Create tooltip also holds the message, so match the field error.
+    await expect(this.page.getByRole("alert", { name: message })).toBeVisible();
   }
 
   async expectCreated() {
-    await expect(this.page).toHaveURL(/\/admin\/indexing-status/);
+    await expect(this.page).toHaveURL(/\/admin\/connector\/\d+/);
   }
 
   /**

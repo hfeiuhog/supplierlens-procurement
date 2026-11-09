@@ -130,6 +130,7 @@ from onyx.server.features.build.sandbox.labels import (
     LABEL_SANDBOX_ID,
     LABEL_TENANT_ID,
 )
+from onyx.server.features.build.sandbox.locks import sandbox_provision_lock
 from onyx.server.features.build.sandbox.models import (
     CraftLLMProviderConfig,
     CraftMCPServerConfig,
@@ -877,6 +878,19 @@ class DockerSandboxManager(SandboxManager):
         onyx_pat: str | None,
         provisioning_attempt_number: int,
     ) -> SandboxInfo:
+        with sandbox_provision_lock(sandbox_id, tenant_id):
+            return self._provision(
+                sandbox_id, user_id, tenant_id, onyx_pat, provisioning_attempt_number
+            )
+
+    def _provision(
+        self,
+        sandbox_id: UUID,
+        user_id: UUID,
+        tenant_id: str,
+        onyx_pat: str | None,
+        provisioning_attempt_number: int,
+    ) -> SandboxInfo:
         if not onyx_pat:
             raise ValueError("onyx_pat is required for Docker sandbox provisioning.")
         if not ONYX_SERVER_URL:
@@ -1134,15 +1148,17 @@ class DockerSandboxManager(SandboxManager):
         return state.get("Status") == "running"
 
     def iter_resources(
-        self, tenant_id: str, deadline: float
+        self, tenant_id: str, deadline: float, sandbox_id: UUID | None = None
     ) -> Iterator[SandboxResource]:
-        filters: dict[str, str | list[str] | bool] = {
-            "label": [
-                f"{LABEL_COMPONENT}={LABEL_COMPONENT_VALUE}",
-                f"{LABEL_K8S_MANAGED_BY}={LABEL_K8S_MANAGED_BY_ONYX}",
-                f"{LABEL_TENANT_ID}={tenant_id}",
-            ]
-        }
+        labels = [
+            f"{LABEL_COMPONENT}={LABEL_COMPONENT_VALUE}",
+            f"{LABEL_K8S_MANAGED_BY}={LABEL_K8S_MANAGED_BY_ONYX}",
+            f"{LABEL_TENANT_ID}={tenant_id}",
+        ]
+        if sandbox_id is not None:
+            labels.append(f"{LABEL_SANDBOX_ID}={sandbox_id}")
+        filters: dict[str, str | list[str] | bool] = {"label": labels}
+        verified_volumes: dict[str, str] = {}
         for kind in (
             SandboxResourceKind.CONTAINER,
             SandboxResourceKind.VOLUME,
@@ -1163,14 +1179,31 @@ class DockerSandboxManager(SandboxManager):
                 )
                 labels = labels or {}
                 resource_network = labels.get(LABEL_DOCKER_NETWORK)
-                if resource_network is not None:
-                    if resource_network != self._network_name:
-                        continue
-                elif (
-                    not self._compose_project
-                    or labels.get("com.docker.compose.project") != self._compose_project
+                if (
+                    resource_network is not None
+                    and resource_network != self._network_name
                 ):
                     continue
+                if resource_network is None:
+                    project_matches = (
+                        bool(self._compose_project)
+                        and labels.get("com.docker.compose.project")
+                        == self._compose_project
+                    )
+                    network_matches = (
+                        kind == SandboxResourceKind.CONTAINER
+                        and self._network_name
+                        in (item.attrs.get("NetworkSettings", {}).get("Networks") or {})
+                    )
+                    volume_matches = kind == SandboxResourceKind.VOLUME and (
+                        verified_volumes.get(item.name) == labels.get(LABEL_SANDBOX_ID)
+                    )
+                    if not (project_matches or network_matches or volume_matches):
+                        logger.warning(
+                            "Retaining Docker resource %s without verified deployment ownership",
+                            item.name,
+                        )
+                        continue
                 resource = sandbox_resource_from_labels(
                     kind=kind,
                     name=item.name,
@@ -1184,6 +1217,12 @@ class DockerSandboxManager(SandboxManager):
                     tenant_id=tenant_id,
                 )
                 if resource is not None:
+                    if kind == SandboxResourceKind.CONTAINER:
+                        for mount in item.attrs.get("Mounts") or []:
+                            if mount.get("Type") == "volume" and mount.get("Name"):
+                                verified_volumes[mount["Name"]] = str(
+                                    resource.sandbox_id
+                                )
                     yield resource
 
     def delete_resource(self, resource: SandboxResource, deadline: float) -> None:

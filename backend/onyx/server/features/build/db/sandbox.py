@@ -189,12 +189,16 @@ def record_cleanup_checkpoint__no_commit(
     db_session: Session,
     sandbox_id: UUID,
     checkpoint: SandboxCleanupCheckpoint,
+    *,
+    expected_status: Literal[
+        SandboxStatus.RUNNING, SandboxStatus.FAILED
+    ] = SandboxStatus.RUNNING,
 ) -> bool:
     result = db_session.execute(
         update(Sandbox)
         .where(
             Sandbox.id == sandbox_id,
-            Sandbox.status == SandboxStatus.RUNNING,
+            Sandbox.status == expected_status,
             Sandbox.provisioning_attempt_number
             == checkpoint.provisioning_attempt_number,
             Sandbox.last_heartbeat.is_not_distinct_from(checkpoint.last_heartbeat),
@@ -300,10 +304,67 @@ def update_sandbox_heartbeat(db_session: Session, sandbox_id: UUID) -> Sandbox:
     return sandbox
 
 
-def get_running_sandboxes(db_session: Session) -> list[Sandbox]:
+def get_running_sandboxes(
+    db_session: Session,
+    *,
+    after_id: UUID | None = None,
+    limit: int | None = None,
+) -> list[Sandbox]:
     """Get all RUNNING sandboxes (the sweep task's working set)."""
-    stmt = select(Sandbox).where(Sandbox.status == SandboxStatus.RUNNING)
+    stmt = (
+        select(Sandbox)
+        .where(Sandbox.status == SandboxStatus.RUNNING)
+        .order_by(Sandbox.id)
+    )
+    if after_id is not None:
+        stmt = stmt.where(Sandbox.id > after_id)
+    if limit is not None:
+        stmt = stmt.limit(limit)
     return list(db_session.execute(stmt).scalars().all())
+
+
+def get_stale_provisioning_sandboxes(
+    db_session: Session,
+    cutoff: datetime.datetime,
+    limit: int,
+) -> list[Sandbox]:
+    return list(
+        db_session.scalars(
+            select(Sandbox)
+            .where(
+                Sandbox.status == SandboxStatus.PROVISIONING,
+                or_(
+                    Sandbox.provisioning_started_at < cutoff,
+                    Sandbox.provisioning_started_at.is_(None),
+                ),
+            )
+            .order_by(Sandbox.created_at, Sandbox.id)
+            .limit(limit)
+        )
+    )
+
+
+def fail_stale_provisioning__no_commit(
+    db_session: Session,
+    sandbox_id: UUID,
+    attempt_number: int,
+    cutoff: datetime.datetime,
+) -> bool:
+    """Fence late finalization before collecting an abandoned attempt's resources."""
+    result = db_session.execute(
+        update(Sandbox)
+        .where(
+            Sandbox.id == sandbox_id,
+            Sandbox.status == SandboxStatus.PROVISIONING,
+            Sandbox.provisioning_attempt_number == attempt_number,
+            or_(
+                Sandbox.provisioning_started_at < cutoff,
+                Sandbox.provisioning_started_at.is_(None),
+            ),
+        )
+        .values(status=SandboxStatus.FAILED)
+    )
+    return result.rowcount == 1  # ty: ignore[unresolved-attribute]
 
 
 def user_has_stale_active_session(
@@ -332,6 +393,15 @@ def user_has_stale_active_session(
         .limit(1)
     )
     return db_session.execute(stmt).first() is not None
+
+
+def user_has_build_sessions(db_session: Session, user_id: UUID) -> bool:
+    return (
+        db_session.scalar(
+            select(BuildSession.id).where(BuildSession.user_id == user_id).limit(1)
+        )
+        is not None
+    )
 
 
 def create_snapshot__no_commit(
